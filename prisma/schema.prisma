@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum CheckpointPhase {
+  DAYS_1_15
+  DAYS_16_30
+  DAYS_31_45
+  DAYS_46_60
+  DAYS_61_75
+  DAYS_76_90
+}
+
+model Employee {
+  id          String             @id @default(cuid())
+  name        String
+  email       String             @unique
+  role        String
+  project     String
+  managerName String
+  startDate   DateTime
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  checkpoints CheckpointReview[]
+}
+
+model CheckpointQuestion {
+  id         String               @id @default(cuid())
+  code       String               @unique
+  dimension  String
+  prompt     String
+  sortOrder  Int
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  responses  CheckpointResponse[]
+}
+
+model CheckpointReview {
+  id             String               @id @default(cuid())
+  employeeId     String
+  phase          CheckpointPhase
+  reviewDate     DateTime?
+  generalComment String?
+  completedAt    DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  employee       Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  responses      CheckpointResponse[]
+
+  @@unique([employeeId, phase])
+}
+
+model CheckpointResponse {
+  id         String             @id @default(cuid())
+  reviewId   String
+  questionId String
+  rating     Int
+  comment    String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  question    CheckpointQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  review      CheckpointReview   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, questionId])
+}
